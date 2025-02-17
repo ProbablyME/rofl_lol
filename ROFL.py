@@ -23,9 +23,7 @@ def main():
 
     # 3) Lorsque l'utilisateur saisit un nom d'équipe
     if team_name:
-        # On recherche les matchs dans lesquels l'équipe saisie apparaît 
-        # soit en tant que blue_team, soit en tant que red_team.
-        # "$options": "i" permet de faire une recherche insensible à la casse.
+        # On recherche les matchs dans lesquels l'équipe saisie apparaît
         query = {
             "$or": [
                 {"blue_team": {"$regex": team_name, "$options": "i"}},
@@ -43,27 +41,39 @@ def main():
                 red_team        = match["red_team"]
                 tournament_name = match["tournament_name"]
 
-                # Affichage basique
-                st.write(f"**{blue_team} vs {red_team}**")
+                st.write(f"### **{blue_team} vs {red_team}**")
                 st.write(f"Tournament: {tournament_name}")
+                st.write(f"Series ID: {series_id}")
 
-                # Construction de l’URL du replay
-                replay_url = f"https://api.grid.gg/file-download/replay/riot/series/{series_id}/games/1"
-
-                # Méthode 2 : st.download_button 
-                # (prend en charge le téléchargement direct, mais attention à la taille du fichier)
-                replay_data = requests.get(replay_url, headers=headers).content
-                st.download_button(
-                    label="Télécharger le replay",
-                    data=replay_data,
-                    file_name=f"{blue_team}_vs_{red_team}_game1.rofl"
-                )
-
+                # Récupération de la liste all_games si elle existe
+                all_games = match.get("all_games", [])
+                if not all_games:
+                    st.write("Aucune game enregistrée (clé 'all_games' manquante ?)")
+                else:
+                    st.write(f"Nombre de games : {len(all_games)}")
+                    for game_info in all_games:
+                        game_number = game_info["game_number"]
+                        st.write(f"- Game #{game_number}")
+                        
+                        # Construction de l’URL du replay
+                        replay_url = f"https://api.grid.gg/file-download/replay/riot/series/{series_id}/games/{game_number}"
+                        
+                        # On récupère directement le contenu du fichier
+                        # Attention : si les .rofl sont volumineux, cela peut prendre du temps !
+                        replay_data = requests.get(replay_url, headers=headers).content
+                        
+                        # Bouton de téléchargement pour chaque game
+                        st.download_button(
+                            label=f"Télécharger le replay de la game {game_number}",
+                            data=replay_data,
+                            file_name=f"{blue_team}_vs_{red_team}_game{game_number}.rofl"
+                        )
+                
                 st.write("---")
         else:
             st.write("Aucun match trouvé pour cette équipe.")
     else:
-        st.write("Veuillez saisir le nom d'une équipe ci-dessus pour afficher les matchs correspondants.")
+        st.write("Veuillez saisir le nom d'une équipe pour afficher les matchs correspondants.")
 
 if __name__ == "__main__":
     main()
